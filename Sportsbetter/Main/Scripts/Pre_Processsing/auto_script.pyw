@@ -34,29 +34,30 @@ def process_csvs_with_scripts(csv_folder, scripts_folder, output_folder):
         print("No Python scripts found in the scripts folder.")
         return
 
-    for script_name in scripts:
-        script_path = os.path.join(scripts_folder, script_name)
-        script_module = load_script(script_path)
+    for csv_file in csv_files:
+        csv_path = os.path.join(csv_folder, csv_file)
+        output_path = os.path.join(output_folder, csv_file)
 
-        for csv_file in csv_files:
-            csv_path = os.path.join(csv_folder, csv_file)
-            output_path = os.path.join(output_folder, f"processed_{script_name[:-3]}_{csv_file}")
+        try:
+            # Load CSV into a DataFrame
+            df = pd.read_csv(csv_path)
 
-            try:
-                # Load CSV into a DataFrame
-                df = pd.read_csv(csv_path)
+            for script_name in scripts:
+                script_path = os.path.join(scripts_folder, script_name)
+                script_module = load_script(script_path)
 
                 # Ensure the script has a `process_dataframe` function
                 if hasattr(script_module, 'process_dataframe'):
-                    df_processed = script_module.process_dataframe(df)
-                    
-                    # Save processed DataFrame to the output folder
-                    df_processed.to_csv(output_path, index=False)
-                    print(f"Processed {csv_file} with {script_name} -> {output_path}")
+                    df = script_module.process_dataframe(df)
+                    print(f"Processed {csv_file} with {script_name}")
                 else:
                     print(f"Script {script_name} does not have a 'process_dataframe' function.")
-            except Exception as e:
-                print(f"Error processing {csv_file} with {script_name}: {e}")
+
+            # Save the fully processed DataFrame to the output folder
+            df.to_csv(output_path, index=False)
+            print(f"Final output saved -> {output_path}")
+        except Exception as e:
+            print(f"Error processing {csv_file}: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process CSV files with Python scripts.")
